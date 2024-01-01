@@ -35,6 +35,7 @@ from fairseq.models.transformer_lm import (
 )
 from unilm.models.connector import build_connector
 from unilm.models.gpt import GPTmodel, GPTModelConfig
+from unilm.models.gpt_eval import GPTEvalmodel
 
 from torchscale.architecture.config import EncoderConfig
 from torchscale.model.BEiT3 import BEiT3
@@ -125,7 +126,11 @@ class UniGPTModelConfig(GPTModelConfig):
         metadata={
             "help": "freeze last layer of visual_pretrained"
         },)
-    
+    no_freeze_all: bool = field(
+        default=False,
+        metadata={
+            "help": "no freeze all image encoder parameters"
+        },)
     # parameters for speech
     speech_model_path: str = field(
         default="",
@@ -194,7 +199,10 @@ class UniGPTmodel(BaseFairseqModel):
     def build_model(cls, args, task):
         if hasattr(task, "all_dict"):
             task.dictionary = task.all_dict
-        gpt_model = GPTmodel.build_model(args, task)
+        if task.__class__.__name__ == 'GenerationObjTask':
+            gpt_model = GPTEvalmodel.build_model(args, task)
+        else:
+            gpt_model = GPTmodel.build_model(args, task)
         logger.info("gpt args is".format(args))
 
         text_model, text_connector = cls.load_text_model(args, task)
@@ -229,8 +237,20 @@ class UniGPTmodel(BaseFairseqModel):
                 p.requires_grad = False
         # freeze audio model
         if model.aud_model is not None:
-            for p in model.aud_model.parameters():
-                p.requires_grad = False
+            for p_name, p in model.img_model.named_parameters():
+                if args.no_freeze_all:
+                    print("no_freeze_layer: {}".format(p_name))
+                    p.requires_grad = True
+                elif args.no_freeze_layer:
+                    freeze = True
+                    no_freeze_layers = args.no_freeze_layer.split(',')    
+                    for no_freeze_layer in no_freeze_layers:
+                        if no_freeze_layer in p_name:
+                            print("no_freeze_layer: {}".format(p_name))
+                            freeze = False
+                    p.requires_grad = False if freeze else True
+                else:
+                    p.requires_grad = False
 
         return model
 
@@ -263,7 +283,6 @@ class UniGPTmodel(BaseFairseqModel):
             else:
                 aud_output = None
 
-            # pdb.set_trace()
             # gpt 
             x, extra = self.gpt_model(src_tokens, 
                 mlm_features=mlm_output, gpt_input_mask=gpt_input_mask,

@@ -40,8 +40,9 @@ from torchscale.architecture.decoder import Decoder
 
 from torchscale.architecture.config import DecoderConfig
 from torchscale.architecture.decoder import Decoder
+from torchscale.component.embedding import TextEmbedding
 
-
+logger = logging.getLogger(__name__)
 DEFAULT_MAX_TARGET_POSITIONS = 1024
 
 
@@ -112,6 +113,13 @@ class GPTModelConfig(TransformerLanguageModelConfig):
     scale_length: Optional[int] = field(
         default=2048,
     )
+    max_chunk_emb: Optional[int] = field(
+        default=0,
+        metadata={"help": "chunk embedding, text image text image text: 0, 1, 1, 2, 2"},
+    )
+    segment_emb: Optional[bool] = field(
+        default=False,
+    )
 
 @register_model("gptmodel", dataclass=GPTModelConfig)
 class GPTmodel(TransformerLanguageModel):
@@ -177,6 +185,12 @@ class GPTmodel(TransformerLanguageModel):
             is_encoder_decoder=False,
             dictionary=task.dictionary,
         )
+        decoder.chunk_emb = None
+        if args.max_chunk_emb > 0:
+            decoder.chunk_emb = TextEmbedding(args.max_chunk_emb, args.decoder_embed_dim)
+        decoder.segment_emb = None
+        if args.segment_emb:
+            decoder.segment_emb = TextEmbedding(2, args.decoder_embed_dim)
         model.decoder = decoder
         if args.gpt_model_path != "":
             assert NotImplementedError
@@ -219,12 +233,20 @@ class LMDecoder(Decoder, FairseqIncrementalDecoder):
         img_gpt_input_mask: Optional[Tensor] = None,
         aud_features: Optional[Tensor] = None,
         aud_gpt_input_mask: Optional[Tensor] = None,
+        chunk_tokens: Optional[Tensor] = None,
+        segment_tokens: Optional[Tensor] = None,
     ):
         positions = None
         if self.embed_positions is not None:
             positions = self.embed_positions(
                 tokens, incremental_state=incremental_state
             )
+            if self.chunk_emb is not None:
+                chunk_emb = self.chunk_emb(chunk_tokens)
+                positions += chunk_emb
+            if self.segment_emb is not None:
+                segment_emb = self.segment_emb(segment_tokens)
+                positions += segment_emb
 
         if incremental_state is not None and not first_step:
             tokens = tokens[:, -1:]
@@ -354,24 +376,5 @@ class LMDecoder(Decoder, FairseqIncrementalDecoder):
         return x, {
             "inner_states": inner_states,
             "l_aux": l_aux,
-            "attn": None,
+            "attn": [layer_attn.mean(dim=0) if layer_attn is not None else None],
         }
-
-
-@register_model_architecture("gptmodel", "gptmodel_small")
-def gptmodel_small(args):
-    # 125M params
-    args.decoder_layers = safe_getattr(args, "decoder_layers", 12)
-    args.decoder_embed_dim = safe_getattr(args, "decoder_embed_dim", 768)
-    args.decoder_attention_heads = safe_getattr(args, "decoder_attention_heads", 12)
-    args.decoder_learned_pos = safe_getattr(args, "decoder_learned_pos", False)
-    base_gpt3_architecture(args)
-
-@register_model_architecture("gptmodel", "gptmodel_medium")
-def gptmodel_medium(args):
-    # 350M params
-    args.decoder_layers = safe_getattr(args, "decoder_layers", 24)
-    args.decoder_embed_dim = safe_getattr(args, "decoder_embed_dim", 1024)
-    args.decoder_attention_heads = safe_getattr(args, "decoder_attention_heads", 16)
-    args.decoder_learned_pos = safe_getattr(args, "decoder_learned_pos", False)
-    base_gpt3_architecture(args)
