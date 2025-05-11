@@ -1,5 +1,11 @@
 # E5 Text Embeddings
 
+[Multilingual E5 Text Embeddings: A Technical Report](https://arxiv.org/pdf/2402.05672).
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang, Rangan Majumder, Furu Wei, arXiv 2024
+
+[Improving Text Embeddings with Large Language Models](https://arxiv.org/pdf/2401.00368.pdf).
+Liang Wang, Nan Yang, Xiaolong Huang, Linjun Yang, Rangan Majumder, Furu Wei, arXiv 2024
+
 [Text Embeddings by Weakly-Supervised Contrastive Pre-training](https://arxiv.org/pdf/2212.03533.pdf).
 Liang Wang, Nan Yang, Xiaolong Huang, Binxing Jiao, Linjun Yang, Daxin Jiang, Rangan Majumder, Furu Wei, arXiv 2022
 
@@ -29,11 +35,12 @@ The models with `-unsupervised` suffix only pre-trains on unlabeled datasets.
 
 ## Multilingual Pre-trained Models
 
-|                       | BEIR | # of layers | embedding dimension | Huggingface                                                                             |
-|-----------------------|------|:-----------:|:-------------------:|-----------------------------------------------------------------------------------------|
-| multilingual-e5-small | 46.6 |     12      |         384         | [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) |
-| multilingual-e5-base  | 48.9 |     12      |         768         | [intfloat/multilingual-e5-base](https://huggingface.co/intfloat/multilingual-e5-base)   |
-| multilingual-e5-large | 51.4 |     24      |        1024         | [intfloat/multilingual-e5-large](https://huggingface.co/intfloat/multilingual-e5-large) |
+|                                | BEIR | # of layers | embedding dimension | Huggingface                                                                                               |
+|--------------------------------|------|:-----------:|:-------------------:|-----------------------------------------------------------------------------------------------------------|
+| multilingual-e5-small          | 46.6 |     12      |         384         | [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small)                   |
+| multilingual-e5-base           | 48.9 |     12      |         768         | [intfloat/multilingual-e5-base](https://huggingface.co/intfloat/multilingual-e5-base)                     |
+| multilingual-e5-large          | 51.4 |     24      |        1024         | [intfloat/multilingual-e5-large](https://huggingface.co/intfloat/multilingual-e5-large)                   |
+| multilingual-e5-large-instruct | 52.5 |     24      |        1024         | [intfloat/multilingual-e5-large-instruct](https://huggingface.co/intfloat/multilingual-e5-large-instruct) |
 
 ## Install Python Package Requirements
 
@@ -56,7 +63,7 @@ By default,
 the evaluation script will use all the available GPUs.
 
 Caution: it could take quite a long time (~10 hours) due to corpus encoding.
-For `e5-mistral-7b-instruct`, it could take even longer (several days).
+For `intfloat/e5-mistral-7b-instruct`, it could take even longer (several days).
 
 ## Evaluate on the [MTEB Benchmark](https://arxiv.org/abs/2210.07316)
 
@@ -72,6 +79,10 @@ For multilingual models, simply add a `--multilingual` suffix:
 bash scripts/eval_mteb_except_retrieval.sh intfloat/multilingual-e5-base --multilingual
 ```
 
+## Other Resources
+
+The data for our proposed synthetic task _personalized passkey retrieval_ is available at [https://huggingface.co/datasets/intfloat/personalized_passkey_retrieval](https://huggingface.co/datasets/intfloat/personalized_passkey_retrieval).
+
 ## Troubleshooting
 
 If you encounter OOM error, please try to reduce the batch size.
@@ -81,6 +92,20 @@ If you encounter OOM error, please try to reduce the batch size.
 If you find our paper or models helpful, please consider cite as follows:
 
 ```
+@article{wang2024multilingual,
+  title={Multilingual E5 Text Embeddings: A Technical Report},
+  author={Wang, Liang and Yang, Nan and Huang, Xiaolong and Yang, Linjun and Majumder, Rangan and Wei, Furu},
+  journal={arXiv preprint arXiv:2402.05672},
+  year={2024}
+}
+
+@article{wang2023improving,
+  title={Improving Text Embeddings with Large Language Models},
+  author={Wang, Liang and Yang, Nan and Huang, Xiaolong and Yang, Linjun and Majumder, Rangan and Wei, Furu},
+  journal={arXiv preprint arXiv:2401.00368},
+  year={2023}
+}
+
 @article{wang2022text,
   title={Text Embeddings by Weakly-Supervised Contrastive Pre-training},
   author={Wang, Liang and Yang, Nan and Huang, Xiaolong and Jiao, Binxing and Yang, Linjun and Jiang, Daxin and Majumder, Rangan and Wei, Furu},
